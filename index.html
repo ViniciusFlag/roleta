@@ -109,12 +109,12 @@
 </div>
 
 <script>
-  /* 🔥 CONFIGURE SEU FIREBASE AQUI */
+  /* 🔥 CONFIGURE SEU FIREBASE */
   const firebaseConfig = {
-    apiKey: "SUA_API_KEY",
-    authDomain: "SEU_PROJETO.firebaseapp.com",
-    databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
-    projectId: "SEU_PROJETO"
+    apiKey: "AIzaSyC1Fz6NMfBKXd-K5Rq8aaDXWZvsJ05r5Cs",
+    authDomain: "roleta-97469.firebaseapp.com",
+    databaseURL: "https://roleta-97469-default-rtdb.firebaseio.com",
+    projectId: "roleta-97469"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -127,6 +127,7 @@
   let history = [];
   let angle = 0;
   let currentWinner = null;
+  let spinning = false;
 
   /* 🔄 SINCRONIZAÇÃO EM TEMPO REAL */
   db.ref('options').on('value', snap => {
@@ -138,6 +139,30 @@
   db.ref('history').on('value', snap => {
     history = snap.val() || [];
     updateHistory();
+  });
+
+  /* 🎯 INICIALIZA OPÇÕES PADRÃO */
+  db.ref('options').once('value', snap => {
+    if (!snap.exists()) {
+      db.ref('options').set([
+        "arroz",
+        "arroz",
+        "arroz à grega",
+        "farofa",
+        "farofa",
+        "salada de maionese",
+        "salada de maionese",
+        "salada verde",
+        "sobremesa",
+        "sobremesa",
+        "sobremesa",
+        "sobremesa",
+        "sobremesa",
+        "sobremesa",
+        "salpicão",
+        "salada de grão de bico"
+      ]);
+    }
   });
 
   function saveOptions() {
@@ -169,34 +194,68 @@
     });
   }
 
+  /* 🎨 DESENHA A ROLETA */
   function drawWheel() {
-    ctx.clearRect(0,0,300,300);
+    ctx.clearRect(0, 0, 300, 300);
     if (!options.length) return;
+
     const slice = 2 * Math.PI / options.length;
-    options.forEach((text,i) => {
+    const colors = ['#c1121f', '#0b7a3b'];
+
+    options.forEach((text, i) => {
       ctx.beginPath();
-      ctx.moveTo(150,150);
-      ctx.arc(150,150,140, angle + i*slice, angle + (i+1)*slice);
-      ctx.fillStyle = `hsl(${i*360/options.length},70%,60%)`;
+      ctx.moveTo(150, 150);
+      ctx.arc(
+        150,
+        150,
+        140,
+        angle + i * slice,
+        angle + (i + 1) * slice
+      );
+      ctx.fillStyle = colors[i % colors.length];
       ctx.fill();
     });
   }
 
+  /* 🎡 GIRO COM ANIMAÇÃO */
   function spinWheel() {
     if (!options.length) return alert('Sem opções');
+    if (spinning) return;
 
-    angle += Math.random() * 10 + 10;
-    drawWheel();
+    spinning = true;
+    let spinTime = 0;
+    const spinTotal = Math.random() * 2000 + 3000;
+    const spinAngle = Math.random() * 20 + 20;
 
+    function rotate() {
+      spinTime += 30;
+      angle += spinAngle * Math.PI / 180;
+      drawWheel();
+
+      if (spinTime < spinTotal) {
+        requestAnimationFrame(rotate);
+      } else {
+        finishSpin();
+      }
+    }
+
+    rotate();
+  }
+
+  function finishSpin() {
     const slice = 2 * Math.PI / options.length;
-    const index = Math.floor(((2*Math.PI - angle%(2*Math.PI))/slice)) % options.length;
+    const index =
+      Math.floor(
+        ((2 * Math.PI - angle % (2 * Math.PI)) / slice)
+      ) % options.length;
 
     currentWinner = options[index];
-    options.splice(index,1);
+    options.splice(index, 1);
     saveOptions();
 
     document.getElementById('winnerText').innerText = currentWinner;
     document.getElementById('resultModal').classList.add('active');
+    spinning = false;
   }
 
   function confirmWinner() {
@@ -210,5 +269,6 @@
     document.getElementById('resultModal').classList.remove('active');
   }
 </script>
+
 </body>
 </html>
