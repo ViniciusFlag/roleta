@@ -1,274 +1,440 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Roleta de Sorteio Online</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Roleta de Sorteio</title>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <style>
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: linear-gradient(135deg, #0b7a3b, #c1121f);
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .container {
-      background: #ffffffee;
-      padding: 18px;
-      border-radius: 18px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-      text-align: center;
-      border: 3px solid #0b7a3b;
-    }
-    h1 { font-size: 1.4rem; }
-    canvas {
-      margin: 12px auto;
-      display: block;
-      border-radius: 50%;
-      border: 6px solid #c1121f;
-      background: #fff;
-    }
-    button {
-      padding: 8px;
-      border: none;
-      border-radius: 6px;
-      background: #0b7a3b;
-      color: #fff;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 6px;
-    }
-    .spin { background: #c1121f; }
-    ul { list-style: none; padding: 0; max-height: 100px; overflow-y: auto; }
-    li {
-      background: #eee;
-      margin: 4px 0;
-      padding: 6px;
-      border-radius: 4px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .history-item {
-      background: #f1f1f1;
-      padding: 6px;
-      border-radius: 6px;
-      margin-bottom: 4px;
-      font-size: 13px;
-    }
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .modal.active { display: flex; }
-    .modal-content {
-      background: #fff;
-      padding: 20px;
-      border-radius: 16px;
-      width: 90%;
-      max-width: 320px;
-      text-align: center;
-    }
-  </style>
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg,#0b7a3b,#c1121f);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  margin:0;
+}
+.container{
+  background:#fff;
+  padding:18px;
+  border-radius:16px;
+  width:100%;
+  max-width:420px;
+  text-align:center;
+}
+canvas{display:block;margin:10px auto}
+button{
+  width:100%;
+  margin-top:6px;
+  padding:8px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+.spin{background:#c1121f;color:#fff}
+.reset{background:#9b2226;color:#fff}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:1000;
+}
+.modal.active{display:flex}
+.modal-content{
+  background:#fff;
+  padding:20px;
+  border-radius:16px;
+  width:90%;
+  max-width:320px;
+  text-align:center;
+}
+
+#confetti{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:2000;
+}
+
+/* 🔐 Área Administrador */
+.admin-panel {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 10px;
+  text-align: left;
+}
+
+.admin-panel h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: #333;
+}
+
+.admin-panel input {
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 6px;
+}
+
+.admin-panel button {
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  border: none;
+  background: #0b7a3b;
+  color: #fff;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.admin-panel .danger {
+  background: #b91c1c;
+}
+
+.admin-panel .exit {
+  background: transparent;
+  color: #555;
+  border: 1px solid #ccc;
+}
+
+
+/* 🎬 Animação suave */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* #adminToggle {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.15);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+#adminToggle:hover {
+  opacity: 0.9;
+  transform: rotate(20deg);
+} */
+
+</style>
 </head>
+
 <body>
 
+<canvas id="confetti"></canvas>
+
 <div class="container">
-  <h1>🎄 Roleta de Sorteio<br><small>Família Rodrigues</small></h1>
+<h2>🎄 Roleta Família Rodrigues</h2>
 
-  <ul id="optionsList"></ul>
+<div id="adminLogin" class="admin-login" style="display:none">
+  <input id="adminPass" type="password" placeholder="Senha admin">
+  <button onclick="loginAdmin()">Entrar</button>
+</div>
 
-  <canvas id="wheel" width="300" height="300"></canvas>
 
-  <button class="spin" onclick="spinWheel()">Girar Roleta</button>
+<canvas id="wheel" width="360" height="360"></canvas>
 
-  <h3>📜 Histórico</h3>
-  <div id="historyList"></div>
+<button class="spin" onclick="spinWheel()">Girar</button>
+<button id="adminToggle" onclick="toggleAdminLogin()" title="Administrador">
+  ⚙️Administrador
+</button>
+
+<div id="adminPanel" class="admin-panel" style="display:none">
+  <h3>Administração</h3>
+
+  <input id="newItem" placeholder="Novo item">
+  <button onclick="addItem()">Adicionar</button>
+
+  <button class="danger" onclick="resetAll()">Resetar roleta</button>
+
+  <button class="exit" onclick="logoutAdmin()">Voltar</button>
+</div>
+
+
+<h3>📜 Histórico</h3>
+<div id="historyList"></div>
 </div>
 
 <div class="modal" id="resultModal">
   <div class="modal-content">
     <h2>🎉 Sorteado</h2>
-    <div id="winnerText" style="font-weight:bold"></div>
-    <input id="winnerName" placeholder="Nome" style="width:100%;margin:8px 0" />
+    <div id="winnerText"></div>
+    <input id="winnerName" placeholder="Nome" style="width:100%;margin:8px 0">
     <button onclick="confirmWinner()">Confirmar</button>
   </div>
 </div>
 
 <script>
-  /* 🔥 CONFIGURE SEU FIREBASE */
-  const firebaseConfig = {
-    apiKey: "AIzaSyC1Fz6NMfBKXd-K5Rq8aaDXWZvsJ05r5Cs",
-    authDomain: "roleta-97469.firebaseapp.com",
-    databaseURL: "https://roleta-97469-default-rtdb.firebaseio.com",
-    projectId: "roleta-97469"
-  };
+  const ADMIN_PASSWORD = "amoJesus1"; // 🔐 troque depois
+  let isAdmin = false;
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
 
-  const canvas = document.getElementById('wheel');
-  const ctx = canvas.getContext('2d');
+/* 🔥 FIREBASE */
+firebase.initializeApp({
+  apiKey:"AIzaSyC1Fz6NMfBKXd-K5Rq8aaDXWZvsJ05r5Cs",
+  databaseURL:"https://roleta-97469-default-rtdb.firebaseio.com"
+});
+const db=firebase.database();
 
-  let options = [];
-  let history = [];
-  let angle = 0;
-  let currentWinner = null;
-  let spinning = false;
+/* 🎯 OPÇÕES PADRÃO */
+// const defaultOptions=[
+//  "arroz","arroz","arroz à grega","farofa","farofa",
+//  "salada de maionese","salada de maionese","salada verde",
+//  "sobremesa","sobremesa","sobremesa","sobremesa",
+//  "salpicão","salada de grão de bico"
+// ];
 
-  /* 🔄 SINCRONIZAÇÃO EM TEMPO REAL */
-  db.ref('options').on('value', snap => {
-    options = snap.val() || [];
-    updateList();
+    const defaultOptions = [
+        'arroz',
+        'arroz',
+        'arroz a grega',
+        'farofa',
+        'farofa',
+        'salada de maionese',
+        'salada de maionese',
+        'salada verde',
+        'sobremesa',
+        'sobremesa',
+        'sobremesa',
+        'sobremesa',
+        'sobremesa',
+        'sobremesa',
+        'salpicão',
+        'salada de grão de bico'
+    ];
+
+let options=[];
+let history=[];
+let angle=0;
+let spinning=false;
+let winner=null;
+
+/* 🔄 SYNC */
+db.ref('options').on('value',s=>{
+  options=s.val()||[];
+  drawWheel();
+});
+db.ref('history').on('value',s=>{
+  history=s.val()||[];
+  renderHistory();
+});
+
+db.ref('options').once('value',s=>{
+  if(!s.exists()) db.ref('options').set(defaultOptions);
+});
+
+/* 🎨 ROLETA */
+const wheel=document.getElementById('wheel');
+const ctx=wheel.getContext('2d');
+
+function drawWheel(){
+  ctx.clearRect(0,0,360,360);
+  if(!options.length)return;
+
+  const r=170,c=180;
+  const slice=2*Math.PI/options.length;
+  const colors=['#c1121f','#0b7a3b'];
+
+  options.forEach((t,i)=>{
+    const a=angle+i*slice;
+    ctx.beginPath();
+    ctx.moveTo(c,c);
+    ctx.arc(c,c,r,a,a+slice);
+    ctx.fillStyle=colors[i%2];
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(c,c);
+    ctx.rotate(a+slice/2);
+    ctx.fillStyle='#fff';
+    ctx.font='bold 14px Arial';
+    ctx.textAlign='right';
+    ctx.fillText(t, r-10,5);
+    ctx.restore();
+  });
+}
+
+/* 🎡 GIRO */
+function spinWheel(){
+  if(spinning||!options.length)return;
+  spinning=true;
+  let t=0,total=3000;
+  function anim(){
+    t+=30;
+    angle+=0.3;
     drawWheel();
-  });
+    if(t<total) requestAnimationFrame(anim);
+    else finishSpin();
+  }
+  anim();
+}
 
-  db.ref('history').on('value', snap => {
-    history = snap.val() || [];
-    updateHistory();
-  });
+function finishSpin(){
+  const slice=2*Math.PI/options.length;
+  const idx=Math.floor((2*Math.PI-angle%(2*Math.PI))/slice)%options.length;
+  winner=options[idx];
+  options.splice(idx,1);
+  db.ref('options').set(options);
 
-  /* 🎯 INICIALIZA OPÇÕES PADRÃO */
-  db.ref('options').once('value', snap => {
-    if (!snap.exists()) {
-      db.ref('options').set([
-        "arroz",
-        "arroz",
-        "arroz à grega",
-        "farofa",
-        "farofa",
-        "salada de maionese",
-        "salada de maionese",
-        "salada verde",
-        "sobremesa",
-        "sobremesa",
-        "sobremesa",
-        "sobremesa",
-        "sobremesa",
-        "sobremesa",
-        "salpicão",
-        "salada de grão de bico"
-      ]);
+  document.getElementById('winnerText').innerText=winner;
+  document.getElementById('resultModal').classList.add('active');
+  startConfetti();
+  spinning=false;
+}
+
+/* 🎊 CONFETE */
+const confettiCanvas=document.getElementById('confetti');
+const cctx=confettiCanvas.getContext('2d');
+confettiCanvas.width=innerWidth;
+confettiCanvas.height=innerHeight;
+let confettiRunning=false;
+let pieces=[];
+
+function startConfetti(){
+  confettiRunning=true;
+  pieces=[...Array(120)].map(()=>({
+    x:Math.random()*confettiCanvas.width,
+    y:Math.random()*confettiCanvas.height,
+    r:Math.random()*6+4,
+    d:Math.random()*3+2,
+    c:Math.random()>0.5?'#c1121f':'#0b7a3b'
+  }));
+  animateConfetti();
+}
+
+function stopConfetti(){
+  confettiRunning=false;
+  cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+}
+
+function animateConfetti(){
+  if(!confettiRunning)return;
+  cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+  pieces.forEach(p=>{
+    cctx.beginPath();
+    cctx.fillStyle=p.c;
+    cctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    cctx.fill();
+    p.y+=p.d;
+    if(p.y>confettiCanvas.height)p.y=0;
+  });
+  requestAnimationFrame(animateConfetti);
+}
+
+/* ✅ CONFIRMAR */
+function confirmWinner(){
+  const name=document.getElementById('winnerName').value.trim();
+  if(!name)return alert('Digite um nome');
+  history.unshift({nome:name,item:winner});
+  db.ref('history').set(history);
+
+  document.getElementById('winnerName').value='';
+  document.getElementById('resultModal').classList.remove('active');
+  stopConfetti();
+}
+
+/* 📜 HISTÓRICO */
+function renderHistory(){
+  const el=document.getElementById('historyList');
+  el.innerHTML='';
+  history.forEach(h=>{
+    el.innerHTML+=`<div>${h.nome} → ${h.item}</div>`;
+  });
+}
+
+/* 🔄 RESET */
+function resetAll() {
+  if (!isAdmin) return alert('Somente administrador');
+
+  if (!confirm('Deseja resetar tudo?')) return;
+  db.ref('options').set(defaultOptions);
+  db.ref('history').set([]);
+  angle = 0;
+}
+
+
+isAdmin = false;
+
+function toggleAdminLogin() {
+  const login = document.getElementById('adminLogin');
+  login.style.display = login.style.display === 'none' ? 'block' : 'none';
+}
+
+function loginAdmin() {
+  const pass = document.getElementById('adminPass').value;
+  if (pass !== 'amoJesus1') return alert('Senha incorreta');
+
+  isAdmin = true;
+  document.getElementById('adminLogin').style.display = 'none';
+  document.getElementById('adminPanel').style.display = 'block';
+}
+
+function logoutAdmin() {
+  isAdmin = false;
+  document.getElementById('adminPanel').style.display = 'none';
+}
+
+
+
+function addItem() {
+  if (!isAdmin) return alert('Acesso negado');
+
+  const item = document.getElementById('newItem').value.trim();
+  if (!item) return;
+
+  options.push(item);
+  db.ref('options').set(options);
+  document.getElementById('newItem').value = '';
+}
+
+function renderOptions() {
+  const ul = document.getElementById('optionsList');
+  ul.innerHTML = '';
+
+  options.forEach((opt, i) => {
+    const li = document.createElement('li');
+    li.textContent = opt;
+
+    if (isAdmin) {
+      li.style.cursor = 'pointer';
+      li.title = 'Clique para remover';
+      li.onclick = () => {
+        if (confirm(`Remover "${opt}"?`)) {
+          options.splice(i, 1);
+          db.ref('options').set(options);
+        }
+      };
     }
+
+    ul.appendChild(li);
   });
+}
 
-  function saveOptions() {
-    db.ref('options').set(options);
-  }
 
-  function saveHistory() {
-    db.ref('history').set(history);
-  }
-
-  function updateList() {
-    const list = document.getElementById('optionsList');
-    list.innerHTML = '';
-    options.forEach(opt => {
-      const li = document.createElement('li');
-      li.textContent = opt;
-      list.appendChild(li);
-    });
-  }
-
-  function updateHistory() {
-    const list = document.getElementById('historyList');
-    list.innerHTML = '';
-    history.forEach(h => {
-      const div = document.createElement('div');
-      div.className = 'history-item';
-      div.textContent = `${h.nome} → ${h.item}`;
-      list.appendChild(div);
-    });
-  }
-
-  /* 🎨 DESENHA A ROLETA */
-  function drawWheel() {
-    ctx.clearRect(0, 0, 300, 300);
-    if (!options.length) return;
-
-    const slice = 2 * Math.PI / options.length;
-    const colors = ['#c1121f', '#0b7a3b'];
-
-    options.forEach((text, i) => {
-      ctx.beginPath();
-      ctx.moveTo(150, 150);
-      ctx.arc(
-        150,
-        150,
-        140,
-        angle + i * slice,
-        angle + (i + 1) * slice
-      );
-      ctx.fillStyle = colors[i % colors.length];
-      ctx.fill();
-    });
-  }
-
-  /* 🎡 GIRO COM ANIMAÇÃO */
-  function spinWheel() {
-    if (!options.length) return alert('Sem opções');
-    if (spinning) return;
-
-    spinning = true;
-    let spinTime = 0;
-    const spinTotal = Math.random() * 2000 + 3000;
-    const spinAngle = Math.random() * 20 + 20;
-
-    function rotate() {
-      spinTime += 30;
-      angle += spinAngle * Math.PI / 180;
-      drawWheel();
-
-      if (spinTime < spinTotal) {
-        requestAnimationFrame(rotate);
-      } else {
-        finishSpin();
-      }
-    }
-
-    rotate();
-  }
-
-  function finishSpin() {
-    const slice = 2 * Math.PI / options.length;
-    const index =
-      Math.floor(
-        ((2 * Math.PI - angle % (2 * Math.PI)) / slice)
-      ) % options.length;
-
-    currentWinner = options[index];
-    options.splice(index, 1);
-    saveOptions();
-
-    document.getElementById('winnerText').innerText = currentWinner;
-    document.getElementById('resultModal').classList.add('active');
-    spinning = false;
-  }
-
-  function confirmWinner() {
-    const name = document.getElementById('winnerName').value.trim();
-    if (!name) return alert('Digite um nome');
-
-    history.unshift({ nome: name, item: currentWinner });
-    saveHistory();
-
-    document.getElementById('winnerName').value = '';
-    document.getElementById('resultModal').classList.remove('active');
-  }
 </script>
+
+
 
 </body>
 </html>
