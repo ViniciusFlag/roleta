@@ -100,17 +100,10 @@ function finishSpin(){
   const idx = Math.floor((2 * Math.PI - angle % (2 * Math.PI)) / slice) % options.length;
 
   winner = options[idx];
-  options.splice(idx, 1);
-  db.ref('options').set(options);
 
   document.getElementById('winnerText').innerText = winner;
   document.getElementById('resultModal').classList.add('active');
   startConfetti();
-
-  // ✅ MARCA QUE O USUÁRIO JÁ JOGOU (AGORA SIM)
-  db.ref(`usersPlayed/${userId}`).set(true);
-  canSpin = false;
-  disableSpin();
 
   spinning = false;
 }
@@ -156,13 +149,24 @@ function animateConfetti(){
 /* 📜 HISTÓRICO */
 function confirmWinner() {
   const name = document.getElementById('winnerName').value.trim();
+  const slice = 2 * Math.PI / options.length;
+  const idx = Math.floor((2 * Math.PI - angle % (2 * Math.PI)) / slice) % options.length;
+
   if (!name) return alert('Digite um nome');
+
+  options.splice(idx, 1);
+  db.ref('options').set(options);
 
   history.unshift({ nome: name, item: winner });
   db.ref('history').set(history);
 
   document.getElementById('winnerName').value = '';
   document.getElementById('resultModal').classList.remove('active');
+
+    // ✅ MARCA QUE O USUÁRIO JÁ JOGOU (AGORA SIM)
+  db.ref(`usersPlayed/${userId}`).set(true);
+  canSpin = false;
+  disableSpin();
     stopConfetti();
 }
 
