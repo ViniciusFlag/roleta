@@ -4,6 +4,7 @@ let history = [];
 let angle = 0;
 let spinning = false;
 let winner = null;
+let winnerIndex = null;
 
 const userId = localStorage.getItem('userId') || crypto.randomUUID();
 localStorage.setItem('userId', userId);
@@ -95,14 +96,11 @@ function spinWheel() {
   anim();
 }
 
-function finishSpin(){
-  const slice = 2 * Math.PI / options.length;
+function finishSpin() {
   const idx = Math.floor(Math.random() * options.length);
 
-  // Ajusta o ângulo para cair no item sorteado
-  angle = (2 * Math.PI) - (idx * slice) - slice / 2;
-
-  const winner = options[idx];
+  winner = options[idx];
+  winnerIndex = idx;
 
   document.getElementById('winnerText').innerText = winner;
   document.getElementById('resultModal').classList.add('active');
@@ -149,28 +147,37 @@ function animateConfetti(){
   requestAnimationFrame(animateConfetti);
 }
 
-/* 📜 HISTÓRICO */
 function confirmWinner() {
   const name = document.getElementById('winnerName').value.trim();
-  const slice = 2 * Math.PI / options.length;
-  const idx = Math.floor((2 * Math.PI - angle % (2 * Math.PI)) / slice) % options.length;
-
   if (!name) return alert('Digite um nome');
 
-  options.splice(idx, 1);
+  // Remove o item correto
+  options.splice(winnerIndex, 1);
   db.ref('options').set(options);
 
-  history.unshift({ nome: name, item: winner });
+  // Salva histórico corretamente
+  history.unshift({
+    nome: name,
+    item: winner
+  });
   db.ref('history').set(history);
 
+  // Limpa modal
   document.getElementById('winnerName').value = '';
   document.getElementById('resultModal').classList.remove('active');
 
-    // ✅ MARCA QUE O USUÁRIO JÁ JOGOU (AGORA SIM)
-  db.ref(`usersPlayed/${userId}`).set(true);
-  canSpin = false;
-  disableSpin();
-    stopConfetti();
+  // Marca que já jogou (exceto admin, se quiser)
+  if (!isAdmin) {
+    db.ref(`usersPlayed/${userId}`).set(true);
+    canSpin = false;
+    disableSpin();
+  }
+
+  stopConfetti();
+
+  // Limpa variáveis
+  winner = null;
+  winnerIndex = null;
 }
 
 function renderHistory() {
