@@ -97,9 +97,12 @@ function spinWheel() {
 
 function finishSpin(){
   const slice = 2 * Math.PI / options.length;
-  const idx = Math.floor((2 * Math.PI - angle % (2 * Math.PI)) / slice) % options.length;
+  const idx = Math.floor(Math.random() * options.length);
 
-  winner = options[idx];
+  // Ajusta o ângulo para cair no item sorteado
+  angle = (2 * Math.PI) - (idx * slice) - slice / 2;
+
+  const winner = options[idx];
 
   document.getElementById('winnerText').innerText = winner;
   document.getElementById('resultModal').classList.add('active');
